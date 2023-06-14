@@ -1,0 +1,764 @@
+---
+title: "pedreno_predictivo"
+author: "Oscar Pedreño Fernandez"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: yes
+    number_sections: yes
+  pdf_document:
+    toc: yes
+---
+
+```{r , message = FALSE, warning = FALSE}
+happiness <- read.csv("Happiness_clean.csv")
+```
+
+# Regresión Lineal
+
+Antes de proceder al análisis, revisad la naturaleza de cada una de las variables a estudiar. Se recomienda
+cambiar las variables character a factor y las de tipo integer a numeric.
+
+```{r , message = FALSE, warning = FALSE}
+str(happiness)
+```
+
+Como podemos observar, las variables Country y Region deberían ser factor y HR numeric. Procedemos:
+
+```{r , message = FALSE, warning = FALSE}
+happiness$HR <- as.numeric(happiness$HR)
+happiness$Country <- as.factor(happiness$Country)
+happiness$Region <- as.factor(happiness$Region)
+```
+
+Y el resultado final quedaría así:
+```{r , message = FALSE, warning = FALSE}
+str(happiness)
+```
+```{r tabla0,  message = FALSE, warning = FALSE, echo = FALSE}
+# Usamos lower.tail = FALSE para referirnos solo a los valores que tenga a su derecha.
+tabla0 <- c(0, "Cambio clase character por factor y integer a numeric", "Cambiamos la clase de character a factor de todos los registros de la tabla para las columnas Country y Region y la clase integer a numeric para todos los registros de la tabla para la columna HR", "De este modo podemos tratar los datos eficientemente cuando aplicamos los modelos y ajustes estadísticos.")
+```
+
+## Modelo de regresión lineal (variables cuantitativas)
+
+
+>Se quiere estudiar si las variables Family, LE y Freedom influyen o no en la percepción de la felicidad. Estimad por mínimos cuadrados ordinarios un modelo lineal que explique la variable HS en función de dichas variables explicativas. Interpretad la calidad del modelo e identificad cuáles de las variables son significativas y en qué grado.
+
+Para responder esta pregunta primero, vamos a definir las variables:
+
+Variable dependiente: **HS** 
+Variables independientes: **Family** , **LE**  y **Freedom**
+
+El modelo lineal que se va a estimar es el siguiente:
+
+$HS = \beta0 + \beta1*Family + \beta2*LE + \beta3*freedom + \varepsilon$
+
+Donde: 
+
++ $\beta0$ es la constante
++ $\beta1,\beta2,\beta3$ son los coeficientes asociados a las variables explicativas
++ $\varepsilon$ es el término de error
+
+Aplicamos la función `lm()`, la cual nos sirve para estimar el modelo lineal en R y lo imputamos en una nueva variable llamada `model`.
+Para obtener el resumen de los resultados usamos `summary()`:
+
+```{r , message = FALSE, warning = FALSE}
+model <- lm(HS ~ Family + LE + Freedom, data = happiness)
+summary(model)
+```
+
+En esta función vemos distintos valores, los explicamos a continuación:
+
++ **Estimate**: Nos muestra los coeficientes estimados para cada variable independiente del modelo. Estos coeficientes indican la relación lineal entre cada variable independiente y la variable dependiente. Los valores más altos (**LE** y **Freedom**) nos indican que a mayor aumento de estas variables la variable dependiente **HS** aumenta en mayor proporción. En nuestro caso no tenemos ninguna variable negativa, si fuera así, nos estaría indicando que a mayor negatividad de esa variable, la variable dependiente disminuiría.
+
++ **Pr(>|t|)**: Valores p: Se utilizan para evaluar la significancia estadística de cada coeficiente estimado. Indican la probabilidad de obtener un coeficiente estimado igual a más extremo si la variable independiente no tuviera un efecto real sobre la variable dependiente. Generalmente un **valor p menor a 0.05** es estadísticamente significativo. En nuestro caso, todos lo son.
+
++ **Multiple R-squared:** Es el coeficiente de determinación R^2 y es una medida de cuánta variabilidad en la variable dependiente (HS en nuestro caso) se explica por las variables independientes(LE, Family y Freedom). R^2 varía entre 0 y 1, donde 0 significa que no hay ninguna variabilidad explicada y 1 significa que toda la variabilidad esta explicada. En nuestro caso obtenemos un 0.7615, lo que significa que el 76.15% de la variabilidad en la variable dependiente se explica por las variables independientes. Identificaremos este porcentaje como un valor de calidad relativamente alto y nos servirá para explicar en gran medida el modelo. 
+
+Para indetificar las variables significativas y en qué grado lo son deberíamos fijarnos en la columna del p-value. Un p-value bajo indicaría que la variable es significativa en el modelo. Dados nuestros resultados vemos que:
+
++ Variable constante: Tiene un valor p muy bajo **< 2e-16**, lo que indica que es significativo en el modelo.
++ Variable Family: Tiene un valor p muy bajo **3.85e-10**, lo que indica que es altamente significativa en el modelo.
++ Variable LE: Tiene un valor p muy bajo **< 2e-16**, lo que indica que es altamente significativa en el modelo.
++ Variable Freedom: Tiene un valor p bajo **1.41e-07**, lo que indica que es significativa en el modelo.
+
+Según los valores p, todas las variables (Family, LE y Freedom) son significativas en el modelo. Estos resultados sugieren que todas las variables tienen un impacto significativo en la variable dependiente y son importantes para explicar la variabilidad en los datos.
+
+```{r tabla1.1a,  message = FALSE, warning = FALSE, echo = FALSE}
+# Usamos lower.tail = FALSE para referirnos solo a los valores que tenga a su derecha.
+tabla1.1.a <- c("1.1.a", "Estudiar si las variables Family, LE y Freedom influyen o no en la percepción de la felicidad", "Según los valores p, todas las variables (Family, LE y Freedom) son significativas en el modelo.", "Estos resultados sugieren que todas las variables tienen un impacto significativo en la variable dependiente y son importantes para explicar la variabilidad en los datos.")
+```
+
+>Se añadirá al modelo anterior las variables GpC y Generosity. A la vista de los resultados obtenidos, ¿sería adecuado añadir dichas variables al modelo?
+
+Para determinar si es adecuado añadir las variables **GpC** y **Generosity** al modelo anterior, podemos realizar una comparación basada en los resultados obtenidos. 
+
+Para ello vamos a ajustar un nuevo modelo lineal que incluya estas variables y evaluar su calidad en comparación con el modelo anterior. 
+Para compararlos utilizaremos la función `anova()` que la utilizaremos para realizar un análisis de varianza para comparar la calidad de los modelos basados en criterios estadísticos.
+
+```{r , message = FALSE, warning = FALSE}
+new_model <- lm(HS ~ Family + LE + Freedom + GpC + Generosity, data = happiness)
+anova(model, new_model)
+```
+
+En este análisis obtenemos los siguientes resultados:
+
+Vemos como el Model 1 se refiere al antiguo modelo, en el que incluiamos las variables **Family**, **LE** y **Freedom**. Mientras que en el model 2 añadimos las variables **GpC** y **Generosity**.
+
++ **Res.Df**: Aquí vemos los grados de libertad residuales de cada uno de los modelos. Estos corresponden al número de observaciones menos el número de parámetros estimados de cada modelo. En el caso del modelo 1 tenemos 153 grados de libertad residuales, mientras que en el modelo 2 tenemos 151.
+
++ **RSS**: Hace referencia a la Suma de cuadrados de los residuos para cada modelo. Observamos que el modelo 2 tiene un RSS ligeramente menor (48.099) en comparación con el modelo 1 (48.505). Esto nos indica que el modelo 2 tiene un mejor ajuste en términos de ajustar los datos.
+
++ **Df**: Son los grados de libertad, en nuestro caso vemos que en el modelo 2 hay 2 df adicionales en comparación con el modelo 1 (Esto ocurre porque hemos añadido dos variables nuevas).
+
++ **Sum of Sq**: Es la suma de los cuadrados de los cambios entre los modlos. En nuestro caso la diferencia es de 0.40539. 
+
++ **Pr(>F)**: Muestra el p-value asociado al estadístico F, que indica la significancia estadística de la mejora en el ajuste. En nuestro caso, el valor p es 0.5306, lo que indica que la mejora en el ajuste del modelo 2 no es estadísticamente significativa a un nivel de significancia común de 0.05.
+
+Estos resultados nos indican que la inclusión de las variables **GpC** y **Generosity** en el modelo no mejora significativamente la calidad del ajuste en comparación con el modelo 1. Esto se basa en el hecho de que el p-value es mayor que el umbral común de significancia (95%). 
+
+```{r tabla1.1b,  message = FALSE, warning = FALSE, echo = FALSE}
+# Usamos lower.tail = FALSE para referirnos solo a los valores que tenga a su derecha.
+tabla1.1b <- c("1.1.b", "Sería adecuado añadir GpC y Generosity al modelo?", "El p-value asociado al estadístico, que indica la significancia estadística de la mejora en el ajuste. En nuestro caso, el valor p es 0.5306, lo que indica que la mejora en el ajuste del modelo 2 no es estadísticamente significativa a un nivel de significancia común de 0.05.", "Estos resultados nos indican que la inclusión de las variables **GpC** y **Generosity** en el modelo no mejora significativamente la calidad del ajuste en comparación con el modelo 1. Esto se basa en el hecho de que el p-value es mayor que el umbral común de significancia (95%).")
+```
+
+## Modelo de regresión lineal (Variables cuantitativas y cualitativas)
+
+
+>Se añadirá al modelo escogido en el apartado b) anterior, la variable cualitativa Region. Tomad como categoría de referencia Sub-Saharan Africa. Interpretad la salida del modelo. A este modelo final se le llamará ModelF.
+
+Como se nos indica en el enunciado, utilizaremos el comando `relevel` para indicar la categoría de referencia. 
+
+```{r , message = FALSE, warning = FALSE}
+happiness$Region <- relevel(happiness$Region, ref = "Sub-Saharan Africa")
+modelF <- lm(HS ~ Family + LE + Freedom + Region, data = happiness)
+summary(modelF)
+```
+
+En la salida de `summary(modelF)` vemos los parámetros anteriores para cada variable y a estos se les unen los referentes a la variable cualitativa Region, donde el modelo proporcionará estimaciones de los coeficientes para cada categoría en comparación con la categoría de referencia ("Sub-Saharan Africa"). Estos coeficientes indican la diferencia promedio en la percepción de la felicidad (HS) entre cada región y la región de referencia.
+
++ La categoría "Australia and New Zealand" tiene un coeficiente estimado de 1.00197, lo que indica que, en promedio, esta región tiene una percepción de la felicidad 1.00197 unidades más alta que la región de referencia ("Sub-Saharan Africa").
+
++ La categoría "Central and Eastern Europe" tiene un coeficiente estimado de 0.24430, lo que sugiere que, en promedio, esta región tiene una percepción de la felicidad 0.24430 unidades más alta que la región de referencia.
+
++ La categoría "Eastern Asia" tiene un coeficiente estimado de -0.00755, lo que indica que, en promedio, esta región tiene una percepción de la felicidad ligeramente más baja que la región de referencia. Sin embargo, este coeficiente no es estadísticamente significativo, ya que el valor p es alto (0.981129).
+
++ La categoría "Latin America and Caribbean" tiene un coeficiente estimado de 0.74518, lo que sugiere que, en promedio, esta región tiene una percepción de la felicidad 0.74518 unidades más alta que la región de referencia.
+
++ La categoría "Middle East and Northern Africa" tiene un coeficiente estimado de 0.48654, lo que indica que, en promedio, esta región tiene una percepción de la felicidad 0.48654 unidades más alta que la región de referencia.
+
++ La categoría "North America" tiene un coeficiente estimado de 1.16719, lo que sugiere que, en promedio, esta región tiene una percepción de la felicidad 1.16719 unidades más alta que la región de referencia.
+
++ La categoría "Southeastern Asia" tiene un coeficiente estimado de 0.09973, lo que indica que, en promedio, esta región tiene una percepción de la felicidad 0.09973 unidades más alta que la región de referencia. Sin embargo, este coeficiente no es estadísticamente significativo.
+
++ La categoría "Southern Asia" tiene un coeficiente estimado de 0.16685, lo que indica que, en promedio, esta región tiene una percepción de la felicidad 0.16685 unidades más alta que la región de referencia. Sin embargo, este coeficiente no es estadísticamente significativo.
+
++ La categoría "Western Europe" tiene un coeficiente estimado de 0.69233, lo que sugiere que, en promedio, esta región tiene una percepción de la felicidad 0.69233 unidades más alta que la región de referencia.
+
+```{r tabla1.2a,  message = FALSE, warning = FALSE, echo = FALSE}
+# Usamos lower.tail = FALSE para referirnos solo a los valores que tenga a su derecha.
+tabla1.2a <- c("1.2.a", "Se añadirá al modelo escogido en el apartado b) anterior, la variable cualitativa Region. Tomad como categoría de referencia Sub-Saharan Africa. Interpretad la salida del modelo. A este modelo final se le llamará ModelF.", "Los coeficientes estimados más altos son para North America (1.16719), Australia and New Zealand (1.00197),  y Latin America and Caribbean (0.74518)", "En general todos los valores son positivos lo que nos indica que en referencia a la categoría Sub-Saharan Africa la percepción de felicidad es mayor para todas ellas. La única que es un poco más baja es la de Eastern Asia, aunque el p-value es muy alto y por lo tanto, no muy significativo.")
+```
+
+
+>Calculad los valores medios de la puntuación de felicidad por Region. ¿Son congruentes estos valores con el resultado obtenido en el ModelF con referencia a la variable Region?
+
+Para ello vamos a calcular cada una de las puntuaciones medias de felicidad por region, usaremos la función `aggregate()` puntualizando que queremos la media:
+
+```{r , message = FALSE, warning = FALSE}
+mean_happiness <- aggregate(HS ~ Region, data = happiness, FUN = mean)
+mean_happiness
+```
+
+En general podemos decir que los resultados de la salida de `summary(modelF)` son congruentes con el cálculo de los valores medios de la puntuación de felicidad. Esto lo podemos afirmar ya que en proporción las regiones con los valores más altos de felicidad se ven referenciados en ambas salidas y cada valor tiene una semejanza en ambas salidas. El único valor que no parece seguir una pauta es el relativo a **Eastern Asia**, aunque en la primera salida ya habíamos definido que p-value era muy alto mostrando una baja significancia en el resultado.
+
+```{r tabla1.2b,  message = FALSE, warning = FALSE, echo = FALSE}
+# Usamos lower.tail = FALSE para referirnos solo a los valores que tenga a su derecha.
+tabla1.2b <- c("1.2.b", "Calculad los valores medios de la puntuación de felicidad por Region. ¿Son congruentes estos valores con el resultado obtenido en el ModelF con referencia a la variable Region?", paste(mean_happiness$Region[1]	," = ",  round(mean_happiness$HS[1]) , ", ", mean_happiness$Region[2]	," = ", mean_happiness$HS[2], ", ", mean_happiness$Region[3]	," = ", round(mean_happiness$HS[3]) , ", ", mean_happiness$Region[4]	," = ",  round(mean_happiness$HS[4]) , ", ", mean_happiness$Region[5]	," = ",  round(mean_happiness$HS[5]) , ", ", mean_happiness$Region[6]	," = ",  round(mean_happiness$HS[6]) , ", ", mean_happiness$Region[7]	," = ",  round(mean_happiness$HS[7]) , ", ", mean_happiness$Region[8]	," = ",  round(mean_happiness$HS[8]) , ", ", mean_happiness$Region[9]	," = ",  round(mean_happiness$HS[9]) , ", ", mean_happiness$Region[10]	," = ",  round(mean_happiness$HS[10]) , ", "), "En general podemos decir que los resultados de la salida de `summary(modelF)` son congruentes con el cálculo de los valores medios de la puntuación de felicidad. Esto lo podemos afirmar ya que en proporción las regiones con los valores más altos de felicidad se ven referenciados en ambas salidas y cada valor tiene una semejanza en ambas salidas. El único valor que no parece seguir una pauta es el relativo a **Eastern Asia**, aunque en la primera salida ya habíamos definido que p-value era muy alto mostrando una baja significancia en el resultado.")
+```
+
+## Diagnosis del modelo
+
+>Para la diagnosis se escoge el ModelF construído y se piden dos gráficos: uno con los valores ajustados frente a los residuos (que nos permitirá ver si la varianza es constante) y el gráfico cuantil-cuantil que compara los residuos del modelo con los valores de una variable que se distribuye normalmente (QQ plot). Interpretad los resultados.
+
+Para ello vamos a generar ambos gráficos, el primero de ello usaremos la función `plot()` con `fitted.values` del modelF y los `residuals`.
+
+```{r , message = FALSE, warning = FALSE}
+# Gráfico de valores ajustados frente a residuos
+plot(modelF$fitted.values, modelF$residuals, xlab = "Valores ajustados", ylab = "Residuos",
+     main = "Valores ajustados vs. Residuos")
+
+# Gráfico cuantil-cuantil (QQ plot)
+qqnorm(modelF$residuals, main = "Gráfico cuantil-cuantil (QQ plot)")
+qqline(modelF$residuals)
+```
+
+Interpretación de los resultados:
+
+1. Gráfico de valores ajugastos frente a los residuos: Observamos como los valores están distribuidos uniformemente alrededor de la linea horizontal, lo que nos indica que la varianza de los residuos es constante. En nuestro caso es muy deseable ya que indica que el modelo no está violando la suposición de homocedasticidad. La ausencia de patrones sistemáticos, indica que el modelo puede capturar adecuadamente la relación entre las variables independientes y la variable dependiente.
+
+2. Gráfico cuantil-cuantil: Los puntos se distribuyen en lo que parece una linea recta diagonal al gráfico, esto nos indica que los residuos se distribuyen normalmente. Esto es importante, ya que muchas técnicas estadísticas asumen que los residuos son normalmente distribuidos. Si los puntos se desviaran significativamente de la linea diagonal, podría indicar una violación de la suposición de normalidad de los residuos.
+
+```{r tabla1.3,  message = FALSE, warning = FALSE, echo = FALSE}
+# Usamos lower.tail = FALSE para referirnos solo a los valores que tenga a su derecha.
+tabla1.3 <- c("1.3", "Dibujar dos gráficos, uno con los valores ajustados a los residuos y el gráfico cuantil-cuantil que compara los residuos dl modelo con los valores de una variable ue se distribuye normalmente.", paste("Gráfico con los valores ajustados frente a los residuos = ", "plot(modelF$fitted.values, modelF$residuals, xlab = 'Valores ajustados', ylab = 'Residuos', main = 'Valores ajustados vs. Residuos')", "qqplot = ", "qqnorm(modelF$residuals, main = 'Gráfico cuantil-cuantil (QQ plot)')"), "**Gráfico de valores ajustados frente a los residuos**: Observamos como los valores están distribuidos uniformemente alrededor de la linea horizontal, lo que nos indica que la varianza de los residuos es constante. En nuestro caso es muy deseable ya que indica que el modelo no está violando la suposición de homocedasticidad. La ausencia de patrones sistemáticos, indica que el modelo puede capturar adecuadamente la relación entre las variables independientes y la variable dependiente.
+
+**Gráfico cuantil-cuantil**: Los puntos se distribuyen en lo que parece una linea recta diagonal al gráfico, esto nos indica que los residuos se distribuyen normalmente. Esto es importante, ya que muchas técnicas estadísticas asumen que los residuos son normalmente distribuidos. Si los puntos se desviaran significativamente de la linea diagonal, podría indicar una violación de la suposición de normalidad de los residuos.")
+```
+
+## Predicción del modelo
+
+
+>Según ModelF, calculad el valor de percepción de la felicidad, HS, de un país hipotético de la zona de Latin America and Caribbean, que hubiera obtenido las puntuaciones siguientes: Freedom= 0.5, Family = 1.2 y LE=0.90.
+
+
+Para ello podemos usar la función `predict()`: 
+
+```{r , message = FALSE, warning = FALSE}
+# Creamos un dataframe con las puntuaciones requeridas:
+new_data <- data.frame(Freedom = 0.5, Family = 1.2, LE = 0.90, Region = "Latin America and Caribbean")
+
+# Utilizar el modelo ModelF para predecir la percepción de felicidad (HS)
+predicted_HS <- predict(modelF, newdata = new_data)
+
+# Mostrar el valor predicho de la percepción de felicidad (HS)
+predicted_HS
+```
+Dadas las puntuaciones del enunciado y la región "Latin America and Caribbean", el resultado de la HS debería ser 7.119557.
+
+```{r tabla1.4,  message = FALSE, warning = FALSE, echo = FALSE}
+# Usamos lower.tail = FALSE para referirnos solo a los valores que tenga a su derecha.
+tabla1.4 <- c("1.4", "Calculad el valor de percepción de la felicidad, HS, de un país hipotético de la zona de Latin America and Caribbean, que hubiera obtenido las puntuaciones siguientes: Freedom= 0.5, Family = 1.2 y LE=0.90", "El resultado es 7.11557", "Dadas las puntuaciones del enunciado y la región 'Latin America and Caribbean'', el resultado de la HS debería ser 7.119557.")
+```
+
+
+# Regresión logística
+
+Se quiere estudiar cuáles son los factores que más influyen en la percepción de los habitantes de cada país
+sobre la felicidad. 
+
+Para ello, primero se creará una nueva variable dicotómica llamada HS_re. Esta nueva variable está relacionada con los valores de la variable HS. Se codificará de la siguiente forma: “unhappy or neutral”, con valores de HS de 0 a 6, y “happy” con valores de HS mayores de 6. Posteriormente se le dará el valor 0 a “unhappy” y el valor 1 a “happy”.
+
+```{r , message = FALSE, warning = FALSE}
+# Creamos una copia del dataset original para realizar todas las transformaciones y manipulaciones del ejercicio.
+happiness_log <- happiness
+# Crear la nueva variable dicotómica HS_re con las variables categóricas.
+happiness_log$HS_re <- ifelse(happiness$HS <= 6, "unhappy or neutral", "happy")
+# Asignar valores numéricos a "HS_re" (0 para "unhappy or neutral" y 1 para "happy")
+happiness_log$HS_re <- ifelse(happiness_log$HS_re == "unhappy or neutral", 0, 1)
+# Verificamos
+head(happiness_log)
+```
+
+```{r tabla2.0,  message = FALSE, warning = FALSE, echo = FALSE}
+# Usamos lower.tail = FALSE para referirnos solo a los valores que tenga a su derecha.
+tabla2.0<- c("2.0", "Crear una nueva variable dicotómica llamada HS_re.", "Creamos una nueva variable en base a HS en la que Se codificará de la siguiente forma: 'unhappy or neutral', con valores de HS de 0 a 6, y 'happy' con valores de HS mayores de 6. Posteriormente se le dará el valor 0 a
+'unhappy' y el valor 1 a 'happy'", "De esta forma vamos a poder trabajar en la regresión logística binaria para la variable HS_re")
+```
+Para poder estimar de forma más objetiva la precisión del modelo, separaremos el conjunto de datos en dos
+partes: el conjunto de entrenamiento (training) y el conjunto de prueba (testing). Ajustaremos el modelo de
+regresión logística con el conjunto de entrenamiento, y evaluaremos la precisión con el conjunto de prueba.
+
+Se pide:
+
+## Generación de los conjuntos de entrenamiento y de test.
+
+```{r , echo = FALSE, message = FALSE, warning = FALSE, comment = FALSE}
+if(!require(caret)){
+    install.packages('caret', repos='http://cran.us.r-project.org')
+    library(caret)
+}
+```
+
+```{r , message = FALSE, warning = FALSE, }
+# Fijar la semilla aleatoria para reproducibilidad
+set.seed(123)
+# Crear una variable para el tamaño de la muestra de entrenamiento
+train_size <- 0.8
+
+# Obtener el índice de las observaciones para el conjunto de entrenamiento
+train_index <- createDataPartition(happiness_log$HS_re, p = train_size, list = FALSE)
+
+# Crear el conjunto de entrenamiento y el conjunto de prueba
+train_data <- happiness_log[train_index, ]
+test_data <- happiness_log[-train_index, ]
+
+# Verificar los tamaños de los conjuntos de datos
+nrow(train_data)  # Número de filas en el conjunto de entrenamiento
+nrow(test_data)   # Número de filas en el conjunto de prueba
+```
+Como podemos observar se han creado dos conjuntos de datos. El `train_data`, con 126 observaciones (el 80%), y el `test_data`, con 31 observaciones (el 20%). Estos dos conjuntos de datos nos servirán para los futuros cálculos.
+
+```{r tabla2.1,  message = FALSE, warning = FALSE, echo = FALSE}
+# Usamos lower.tail = FALSE para referirnos solo a los valores que tenga a su derecha.
+tabla2.1<- c("2.1", "Generación de los conjuntos de entrenamiento y de test", "Creamos el conjunto de datos `train_data` y `test_data`, el primero tendrá el 80% de los datos (Son 126 registros) y el segundo el 20% (Con 31 registros)", "Estos dos conjuntos de datos nos servirán para los futuros cálculos.")
+```
+
+## Estimación del modelo con el conjunto de entrenamiento e interpretación
+
+Tomando como base el conjunto de `train_data`:
+
+>Estimad un modelo de regresión logística tomando como variable dependiente HS_re y variables explicativas LE, Freedom y Generosity. A la vista de los resultados, ¿qué variables escogerías para el modelo?
+
+Para realizar este ejercicio vamos a hacer uso de la función `glm()`. El parámetro family lo marcaremos como binomial ya que sirve para indicar que estamos ajustado un modelo de regresión logística binaria. En nuestro caso lo es ya que `HS_re` es una variable dicotómica con dos categorías:
+
+```{r , message = FALSE, warning = FALSE, }
+log_model <- glm(HS_re ~ LE + Freedom + Generosity, data = train_data, family = binomial)
+summary(log_model)
+```
+
+Los resultados nos muestran lo siguiente:
+
++ **Deviance Residuals**: Estos valores representan las diferencias entre los valores observados y los valores predichos por el modelo. Un valor residual positivo indica que el modelo subestima la probabilidad de ser "happy", mientras que un valor residual negativo indica una sobreestimación. Los residuos deben estar alrededor del 0 y con una dispersión constante para que el modelo sea válido. En nuestro caso podemos corroborar que así es.
+
++ **Coefficients**: En esta tabla podemos encontrar los coeficientes estimados para cada una de las variables explicativas. Cada coeficiente se asocia con una variable específica y representa el incremento unitario de ser happy para la variable correspondiente. Los coeficientes también están acompañados de su error estándar, el valor z (significancia estadística) y el p-value asociado. En nuestro caso: 
+
+  + **LE**: El coeficiente de  8.92271 indica que un aumento unitario de la variable LE se asocia con un incremento de aproximadamente 8.92 de ser "happy". Se trataría de un factor de riesgo.
+  + **Freedom**: El coeficiente de 9.99891 indica que un aumento unitario de la variable Freedom se asocia con un incremento de aproximadamente 9.99 de ser "happy". Se trataría de un factor de riesgo.
+  + **Generosity**: El coeficiente de -0.041215 nos indica que un aumento unitario de la variable Generosity se asocia con un decremento de aproximadamente 0.04125 de ser "happy". Se trataría de un factor de protección aunque no de una forma muy explicativa.
+  
+Como podemos ver, vemos que según los coeficientes significativos y el p-value tan bajo, las variables **LE** y **Freedom** son significativas, mientras que la variable **Generosity** no lo sería. Por lo cual, nos quedaríamos con las más explicativas **LE y Freedom**.
+
+```{r tabla2.2a,  message = FALSE, warning = FALSE, echo = FALSE}
+# Usamos lower.tail = FALSE para referirnos solo a los valores que tenga a su derecha.
+tabla2.2a<- c("2.2a", "Estimad un modelo de regresión logística tomando como variable dependiente HS_re y variables explicativas LE, Freedom y Generosity. A la vista de los resultados, ¿qué variables escogerías para el modelo?","**LE**: El coeficiente de  8.92271 indica que un aumento unitario de la variable LE se asocia con un incremento de aproximadamente 8.92 de ser 'happy'. Se trataría de un factor de riesgo.
+
+**Freedom**: El coeficiente de 9.99891 indica que un aumento unitario de la variable Freedom se asocia con un incremento de aproximadamente 9.99 de ser 'happy'. Se trataría de un factor de riesgo.
+
+**Generosity**: El coeficiente de -0.041215 nos indica que un aumento unitario de la variable Generosity se asocia con un decremento de aproximadamente 0.04125 de ser 'happy'. Se trataría de un factor de protección aunque no de una forma muy explicativa.", "Como podemos ver, vemos que según los coeficientes significativos y el p-value tan bajo, las variables **LE** y **Freedom** son significativas, mientras que la variable **Generosity** no lo sería. Por lo cual, nos quedaríamos con las más explicativas **LE y Freedom**.")
+```
+
+
+> Se añade al modelo escogido anterior la variable GC. Estudiad la presencia o no de colinealidad entre esta variable y Freedom. Una vez corregido el modelo por la presencia o no de colinealidad, estudiad si se podría estar en presencia de una variable confusora. En base a los resultados, decidid si se mantiene o no la variable GC en el modelo.
+
+Para evaluar la colinealidad entre las variables GC y Freedom y determinar si GC actúa como una variable confusora en el modelo debemos, primero de todo, ajustar un modelo de regresión lineal entre **Freedom** y **GC**:
+
+```{r , message = FALSE, warning = FALSE, }
+lm_colinearity <- lm(Freedom ~ GC, data = train_data)
+summary(lm_colinearity)
+```
+La interpretación de este ajuste es el siguiente:
+
++ **Intercept**: Este valor de 0.276... nos indica el valor de Freedom cuando la variable GC es 0.
++ **Coefficient GC**: El coeficiente estimado de GC es 0.644.... Esto nos indica que por cada unidad de aumento en GC, se espera un aumento de 0.644... en el valor de Freedom.
++ **p-value**: Tanto el intercepto como el coeficiente GC tienen un p-value muy bajo (< 2e-16 y 1.6e-08 respectivamente). Esto nos indica que la relación entre Freedom y GC es estadísticamente significativa.
+
+Después de ver estos valores podemos definir que existe una relación significativa entre Freedom y GC y por lo tanto existe colinealidad. Aunque para evaluar si la variable GC actúa como una variable confusora, es necesario ajustar el modelo logístico completo y analizar los resultados de significancia analizando el impacto de esta variable en las demás variables explicativas:
+
+```{r , message = FALSE, warning = FALSE, }
+log_model_GC <- glm(HS_re ~ LE + Freedom + Generosity + GC, family = binomial, data = train_data)
+summary(log_model_GC)
+```
+
+Al añadir **GC** al modelo podemos considerar distintos aspectos:
+
++ La significancia estadística de GC no es significativa, mientras que las variables **LE** y **Freedom** sí lo son. Esto nos está diciendo que estas variables son explicativas respecto la variable dependiente **HS_re**, mientras que la recientemente añadida, no lo sería.
+
++ El impacto en los demás coeficientes es practicamente nulo. Podemos observar como los coeficientes de **LE** y **Freedom** se mantienen significativos y con valores similares a los obtenidos en el modelo anterior sin incluir **GC**. Por lo tanto, podemos afirmar que la variable GC no está influyendo en forma significativa en las estimaciones de las demás variables.
+
+Basándonos en estos aspectos, no parece haber evidencia suficiente para considerar **GC** como una variable confusora en este modelo. Dados estos resultados, optaremos por no incluir esta nueva variable en el modelo.
+
+```{r tabla2.2b,  message = FALSE, warning = FALSE, echo = FALSE}
+# Usamos lower.tail = FALSE para referirnos solo a los valores que tenga a su derecha.
+tabla2.2b<- c("2.2b", "Se añade al modelo escogido anterior la variable GC. Estudiad la presencia o no de colinealidad entre esta variable y Freedom. Una vez corregido el modelo por la presencia o no de colinealidad, estudiad si se podría estar en presencia de una variable confusora. En base a los resultados, decidid si se mantiene o no la variable GC en el modelo.", "La significancia estadística de GC no es significativa, mientras que las variables **LE** y **Freedom** sí lo son. Esto nos está diciendo que estas variables son explicativas respecto la variable dependiente **HS_re**, mientras que la recientemente añadida, no lo sería.
+
+El impacto en los demás coeficientes es practicamente nulo. Podemos observar como los coeficientes de **LE** y **Freedom** se mantienen significativos y con valores similares a los obtenidos en el modelo anterior sin incluir **GC**. Por lo tanto, podemos afirmar que la variable GC no está influyendo en forma significativa en las estimaciones de las demás variables.", "Basándonos en estos aspectos, no parece haber evidencia suficiente para considerar **GC** como una variable confusora en este modelo. Dados estos resultados, optaremos por no incluir esta nueva variable en el modelo.")
+```
+
+
+
+>Se añade al modelo escogido en el apartado b), la variable Region_re. Esta nueva variable se construye a partir de Region. Las nuevas categorías serán: Africa: se agruparán todas las regiones que contengan la palabra Africa. Asia: se agruparán todas las regiones que contengan la palabra Asia. A_A_NZ: Se agruparán las regiones de Australia and New Zealand y North America. Western Europe, Central and Eastern Europe y Latin America and Caribbean, se mantienen como están. En el modelo de regresión se tomará como categoría de referencia Central and Eastern Europe. Se pide: 
+  
+Antes de nada vamos a crear la variable Region_re tanto en el modelo `train_data` como en el modelo `test_data`:
+
+```{r , message = FALSE, warning = FALSE, }
+# Creamos la columna Region_re para el train_data.
+train_data$Region_re <- ifelse(grepl("Africa", train_data$Region), "Africa",
+                               ifelse(grepl("Asia", train_data$Region), "Asia",
+                                      ifelse(train_data$Region %in% c("Australia and New Zealand", "North America"), "A_A_NZ",
+                                             ifelse(grepl("Western Europe", train_data$Region), "Western Europe",
+                                                    ifelse(grepl("Central and Eastern Europe", train_data$Region), "Central and Eastern Europe",
+                                                           ifelse(grepl("Latin America and Caribbean", train_data$Region), "Latin America and Caribbean",
+                                                    train_data$Region))))))
+# Añadimos la referencia relativa a Central and Eastern Europe. Para ello primero definimos la variable Region_re como factor.
+train_data$Region_re <- as.factor(train_data$Region_re)
+train_data$Region_re <- relevel(train_data$Region_re, ref = "Central and Eastern Europe")
+```
+
+
+```{r , message = FALSE, warning = FALSE, }
+head(train_data)
+```
+
+Realizamos lo mismo con el conjunto de datos de testing:
+
+```{r , message = FALSE, warning = FALSE, }
+# Creamos la columna Region_re para el train_data.
+test_data$Region_re <- ifelse(grepl("Africa", test_data$Region), "Africa",
+                               ifelse(grepl("Asia", test_data$Region), "Asia",
+                                      ifelse(test_data$Region %in% c("Australia and New Zealand", "North America"), "A_A_NZ",
+                                             ifelse(grepl("Western Europe", test_data$Region), "Western Europe",
+                                                    ifelse(grepl("Central and Eastern Europe", test_data$Region), "Central and Eastern Europe",
+                                                           ifelse(grepl("Latin America and Caribbean", test_data$Region), "Latin America and Caribbean",
+                                                    test_data$Region))))))
+# Añadimos la referencia relativa a Central and Eastern Europe. Para ello primero definimos la variable Region_re como factor.
+test_data$Region_re <- as.factor(test_data$Region_re)
+test_data$Region_re <- relevel(test_data$Region_re, ref = "Central and Eastern Europe")
+```
+
+
+```{r , message = FALSE, warning = FALSE, }
+head(test_data)
+```
+```{r tabla2.2c.0,  message = FALSE, warning = FALSE, echo = FALSE}
+# Usamos lower.tail = FALSE para referirnos solo a los valores que tenga a su derecha.
+tabla2.2c.0<- c("2.2c.0", "Se añade la variable Region_re al modelo.", "Esta nueva variable se construye a partir de Region. Las nuevas categorías serán: Africa: se agruparán todas las regiones que contengan la palabra Africa. Asia: se agruparán todas las regiones que contengan la palabra Asia. A_A_NZ: Se agruparán las regiones de Australia and New Zealand y North America. Western Europe, Central and Eastern Europe y Latin America and Caribbean, se mantienen como están. En el modelo de regresión se tomará como categoría de referencia Central and Eastern Europe.", "De esta forma buscamos aumentar el ajuste y la eficiencia del modelo de regresión logística.")
+```
+
+
+>> Interpretad la salida del modelo final. Se tomará como modelo final el obtenido en el apartado c) y se le llamará ModlgF. ¿Existe una mejora del modelo? 
+  
+```{r , message = FALSE, warning = FALSE, }
+ModlgF <- glm(HS_re ~ LE + Freedom + Generosity + Region_re, data = train_data, family = binomial)
+summary(ModlgF)
+```
+  En este modelo final, podemos observar lo siguiente:
+  
+  + **Coeficientes**: Se han añadido los nuevos coeficientes para las categorías Region_re en referencia a la subcategoría "Central and Eastern Europe". 
+  + **Significancia estadística**: Algunos coeficientes de `Region_re` tienen valores de p significativos, lo que indica que esas categorías tienen un efecto estadísticamente significativo en la variable dependiente `HS_re`. Como ejemplo tenemos que las categorías **Africa** y **Latin America and Caribbean**, tienn valor p-value inferiores a 0.05, lo que indica que son variables significativas en el modelo.
+  + **Residual deviance**: La desviación residual ha disminuido de 83.678 a 61.308 cuando hemos añadido la categoría `Region_re`. Esto nos indica que el modelo ajustado explica mejor la variablilidad de los datos observados.
+  + **AIC**: El AIC ha disminuido de 91.678 a 79.308 después de incluir la categoría `Region_re` en el modelo. Un valor más bajo de AIC indica un mejor ajuste del modelo.
+  
+Por lo tanto, podríamos definir que la inclusión de la variable `Region_re` ha mejorado el modelo. Se observa una reducción de la desviación residual y del AIC, lo que indica un mejor ajuste del modelo de datos. Ademas algunas categorias de `Region_re` muestran una significancia estadística en su efecto sobre la variable dependiente. Aún así, cabe destacar que la categoría **A_A_NZ** tiene un valor extremadamente alto y un p-value no significativo, por lo que podría ser que esta categoría no esta aportando información útil al modelo. 
+  
+
+```{r tabla2.2c.1,  message = FALSE, warning = FALSE, echo = FALSE}
+# Usamos lower.tail = FALSE para referirnos solo a los valores que tenga a su derecha.
+tabla2.2c.1<- c("2.2c.1", "Interpretad la salida del modelo final. Se tomará como modelo final el obtenido en el apartado c) y se le llamará ModlgF. ¿Existe una mejora del modelo?", "Aplicamos la función `glm()` al modelo y obtenemos la siguiente información:
+  + **Coeficientes**: Se han añadido los nuevos coeficientes para las categorías Region_re en referencia a la subcategoría 'Central and Eastern Europe'. 
+  + **Significancia estadística**: Algunos coeficientes de `Region_re` tienen valores de p significativos, lo que indica que esas categorías tienen un efecto estadísticamente significativo en la variable dependiente `HS_re`. Como ejemplo tenemos que las categorías **Africa** y **Latin America and Caribbean**, tienn valor p-value inferiores a 0.05, lo que indica que son variables significativas en el modelo.
+  + **Residual deviance**: La desviación residual ha disminuido de 83.678 a 61.308 cuando hemos añadido la categoría `Region_re`. Esto nos indica que el modelo ajustado explica mejor la variablilidad de los datos observados.
+  + **AIC**: El AIC ha disminuido de 91.678 a 79.308 después de incluir la categoría `Region_re` en el modelo. Un valor más bajo de AIC indica un mejor ajuste del modelo.", "Podríamos definir que la inclusión de la variable `Region_re` ha mejorado el modelo. Se observa una reducción de la desviación residual y del AIC, lo que indica un mejor ajuste del modelo de datos. Ademas algunas categorias de `Region_re` muestran una significancia estadística en su efecto sobre la variable dependiente. Aún así, cabe destacar que la categoría **A_A_NZ** tiene un valor extremadamente alto y un p-value no significativo, por lo que podría ser que esta categoría no esta aportando información útil al modelo. ")
+```
+
+>> Resumid cuáles de las variables pueden considerarse factores de riesgo o protección.
+
+Podríamos decir que las categorías consideradas con mayor factor de riesgo son las de **A_A_NZ** (a pesar de que su p-value no es significativo), seguido de **Latin America and Caribbean**, aunque todas las regiones estarian consideradas como factor de riesgo ya que su valor es positivo en referencia a **Central and Eastern Europe**.
+
+En cuanto a las variables numéricas también las computaremos como factores de riesgo y en mayor medida las variables **LE** y **Freedom**. En cuanto a la variable **Intercept** es la única que podría ser considerada como factor de protección. 
+
+
+```{r tabla2.2c.2,  message = FALSE, warning = FALSE, echo = FALSE}
+# Usamos lower.tail = FALSE para referirnos solo a los valores que tenga a su derecha.
+tabla2.2c.2<- c("2.2.c2", "Resumid cuáles de las variables pueden considerarse factores de riesgo o protección.", "Todas las variables están consideradas como factores de riesgo menos la variable intercept", "Podríamos decir que las categorías consideradas con mayor factor de riesgo son las de **A_A_NZ** (a pesar de que su p-value no es significativo), seguido de **Latin America and Caribbean**, aunque todas las regiones estarian consideradas como factor de riesgo ya que su valor es positivo en referencia a **Central and Eastern Europe**.
+
+En cuanto a las variables numéricas también las computaremos como factores de riesgo y en mayor medida las variables **LE** y **Freedom**. En cuanto a la variable **Intercept** es la única que podría ser considerada como factor de protección. 
+")
+```
+## Cálculo de las OR (Odds-Ratio)
+
+> Según los resultados de ModlgF, calculad las OR de cada una de las variables explicativas e interpretad.
+
+```{r , message = FALSE, warning = FALSE, }
+# Cálculo de las Odds Ratio (OR)
+exp(coefficients(ModlgF))
+```
+
+La interpretación de las OR sería la siguiente:
+
++ El OR para la variable **LE** es de aproximadamente 5.96 x 10^5. Esto significa que por cada unidad adicional en **LE**, las odds de tener un nivel más alto de felicidad aumentan en alrededor de 5.96 x 10^5 veces.
+
++ El OR para la variable **Freedom** es de aproximadamente 3.86 x 10^4. Esto indica que por cada unidad adicional en **Freedom**, las odds de tener un nivel más alto de felicidad aumentan en alrededor de 3.86 x 10^4 veces.
+
++ El OR para la variable **Generosity** es de aproximadamente 12.99. Esto significa que por cada unidad adicional en **Generosity**, las odds de tener un nivel más alto de felicidad aumentan en aproximadamente 12.99 veces.
+
++ El OR para la variable **Region_reA_A_NZ** es de aproximadamente 1.76 x 10^7. Esto indica que en comparación con la región de referencia **Central and Eastern Europe**, las odds de tener un nivel más alto de felicidad son mucho mayores en la región **Australia and New Zealand** y **North America** combinadas.
+
++ El OR para la variable **Region_reAfrica** es de aproximadamente 50.08. Esto indica que en comparación con la región de referencia **Central and Eastern Europe**, las odds de tener un nivel más alto de felicidad son aproximadamente 50.08 veces mayores en las regiones que contienen la palabra **Africa**.
+
++ El OR para la variable **Region_reAsia** es de aproximadamente 2.58. Esto sugiere que en comparación con la región de referencia **Central and Eastern Europe**, las odds de tener un nivel más alto de felicidad son aproximadamente 2.58 veces mayores en las regiones que contienen la palabra **Asia**.
+
++ El OR para la variable **Region_reLatin America and Caribbean** es de aproximadamente 64.49. Esto indica que en comparación con la región de referencia **Central and Eastern Europe**, las odds de tener un nivel más alto de felicidad son aproximadamente 64.49 veces mayores en las regiones de América Latina y el Caribe.
+
++ El OR para la variable **Region_reWestern Europe** es de aproximadamente 3.18. Esto sugiere que en comparación con la región de referencia **Central and Eastern Europe**, las odds de tener un nivel más alto de felicidad son aproximadamente 3.18 veces mayores en las regiones de Europa Occidental.
+
+```{r tabla2.3,  message = FALSE, warning = FALSE, echo = FALSE}
+# Usamos lower.tail = FALSE para referirnos solo a los valores que tenga a su derecha.
+tabla2.3<- c("2.3", "Según los resultados de ModlgF, calculad las OR de cada una de las variables explicativas e interpretad.", "Aplicamos la función `exp()` a los coeficientes del modelo para obtener el OR de cada una de las variables:
++ El OR para la variable **LE** es de aproximadamente 5.96 x 10^5. Esto significa que por cada unidad adicional en **LE**, las odds de tener un nivel más alto de felicidad aumentan en alrededor de 5.96 x 10^5 veces.
+
++ El OR para la variable **Freedom** es de aproximadamente 3.86 x 10^4. Esto indica que por cada unidad adicional en **Freedom**, las odds de tener un nivel más alto de felicidad aumentan en alrededor de 3.86 x 10^4 veces.
+
++ El OR para la variable **Generosity** es de aproximadamente 12.99. Esto significa que por cada unidad adicional en **Generosity**, las odds de tener un nivel más alto de felicidad aumentan en aproximadamente 12.99 veces.
+
++ El OR para la variable **Region_reA_A_NZ** es de aproximadamente 1.76 x 10^7. Esto indica que en comparación con la región de referencia **Central and Eastern Europe**, las odds de tener un nivel más alto de felicidad son mucho mayores en la región **Australia and New Zealand** y **North America** combinadas.
+
++ El OR para la variable **Region_reAfrica** es de aproximadamente 50.08. Esto indica que en comparación con la región de referencia **Central and Eastern Europe**, las odds de tener un nivel más alto de felicidad son aproximadamente 50.08 veces mayores en las regiones que contienen la palabra **Africa**.
+
++ El OR para la variable **Region_reAsia** es de aproximadamente 2.58. Esto sugiere que en comparación con la región de referencia **Central and Eastern Europe**, las odds de tener un nivel más alto de felicidad son aproximadamente 2.58 veces mayores en las regiones que contienen la palabra **Asia**.
+
++ El OR para la variable **Region_reLatin America and Caribbean** es de aproximadamente 64.49. Esto indica que en comparación con la región de referencia **Central and Eastern Europe**, las odds de tener un nivel más alto de felicidad son aproximadamente 64.49 veces mayores en las regiones de América Latina y el Caribe.
+
++ El OR para la variable **Region_reWestern Europe** es de aproximadamente 3.18. Esto sugiere que en comparación con la región de referencia **Central and Eastern Europe**, las odds de tener un nivel más alto de felicidad son aproximadamente 3.18 veces mayores en las regiones de Europa Occidental.", "Como conclusión decimos que en todas las variables el OR es positivo, por lo que, en cuanto a las categorías de las regiones la percepción es de que es mayor que en la categoría de referencia **Central and Eastern Europe** y en cuanto a las variables explicativas, la OR indica que ayuda a aumentar el valor de la variable dependiente **HS**.
+")
+```
+
+## Matriz de confusión
+
+> A continuación analizad la precisión de ModlgF, comparando la predicción del modelo contra el conjunto de prueba (testing). Se asumirá que la predicción del modelo es 1, happy, si la probabilidad del modelo de regresión logística es superior o igual a 0.8 y 0 en caso contrario. Analizad la matriz de confusión y las medidas de sensibilidad y especificidad.
+
+Para construir la matriz de confusión utilizamos los casos del conjunto de datos original (que puede denominarse conjunto de aprendizaje o training set). Para cada caso se tiene una respuesta observada y se puede predecir la probabilidad ajustada por el modelo.
+
+
+```{r , message = FALSE, warning = FALSE, }
+# Obtener las probabilidades predichas. Modlgf vs test_data.
+predicted_probs <- predict(ModlgF, newdata = test_data, type = "response")
+
+# Se asumirá que la predicción del modelo es 1, happy, si la probabilidad del modelo de regresión logística es superior o igual a 0.8 y 0 en caso contrario
+predicted_labels <- ifelse(predicted_probs >= 0.8, 1, 0)
+```
+
+Una vez que tenemos las etiquetas predichas, podemos constuir la matriz de confusión y calcular las medidas de sensibilidad y especificidad:
+
+```{r , message = FALSE, warning = FALSE, }
+# Construir la matriz de confusión
+confusion_matrix <- table(predicted = predicted_labels, actual = test_data$HS_re)
+confusion_matrix
+```
+En la matriz de confusión, los valores en la diagonal principal representan las clasificaciones correctas, mientras que los valores fuera de la diagonal principal representan las clasificaciones incorrectas. En este caso, el modelo predijo correctamente 19 casos como no happy (clase 0) y 5 casos como happy (clase 1). Sin embargo, el modelo cometió 4 falsos positivos, es decir, clasificó erróneamente 4 casos como happy cuando en realidad eran no happy, y cometió 3 falsos negativos, clasificando erróneamente 3 casos como no happy cuando en realidad eran happy.
+
+
+```{r , message = FALSE, warning = FALSE, }
+# Calcular la sensibilidad y especificidad
+sensitivity <- confusion_matrix[2, 2] / sum(confusion_matrix[, 2])
+sensitivity
+specificity <- confusion_matrix[1, 1] / sum(confusion_matrix[, 1])
+specificity
+```
+Hay que tener en cuenta que:
+
+  + La sensibilidad (Verdaderos positivos) es la proporción de los clasificados correctamente entre los verdaderos participantes que han dado respuesta afirmativa. En nuestro caso tenemos una sensibilidad de 0.5555556, lo que indica que el modelo identificó correctamente el 55,56% de los casos que realmente erán happy.
+
+  + La especificidad (Verdaderos negativos) es la proporción de casos correctamente clasificados entre las respuestas negativas. En nuestro caso, la especificidad ha sido de 0.8636364, lo que indica que el modelo identificó correctamente el 86.36% de los casos que realmente no eran happy.
+  
+Dados estos resultados podemos decir que nuestro modelo tiene una sensibilidad relativamente baja, lo que significaría que no logra identificar correctamente la mayoría de los casos que son realmente happy, pero por otro lado la especificidad resulta alta, lo que nos indica que el modelo es efectivo para identificar los casos que son realmente no happy. 
+
+Esto nos indica que el modelo podría estar sesgado hacia los resultados no happy y podría dificultar su capacidad para capturar correctamente los casos happy.
+
+```{r tabla2.4,  message = FALSE, warning = FALSE, echo = FALSE}
+# Usamos lower.tail = FALSE para referirnos solo a los valores que tenga a su derecha.
+tabla2.4<- c("2.4", "Analizad la precisión de ModlgF, comparando la predicción del modelo contra el conjunto de prueba (testing). Se asumirá que la predicción del modelo es 1, happy, si la probabilidad del modelo de regresión logística es superior o igual a 0.8 y 0 en caso contrario. Analizad la matriz de confusión y las medidas de sensibilidad y especificidad.", paste("Matriz de confusión =  Clase 0: 19, Clase 1: 5, sensibilidad = ", round(sensitivity), " specificidad = ", round(specificity)), "La sensibilidad (Verdaderos positivos) es la proporción de los clasificados correctamente entre los verdaderos participantes que han dado respuesta afirmativa. En nuestro caso tenemos una sensibilidad de 0.5555556, lo que indica que el modelo identificó correctamente el 55,56% de los casos que realmente erán happy.
+
+La especificidad (Verdaderos negativos) es la proporción de casos correctamente clasificados entre las respuestas negativas. En nuestro caso, la especificidad ha sido de 0.8636364, lo que indica que el modelo identificó correctamente el 86.36% de los casos que realmente no eran happy.
+  
+Dados estos resultados podemos decir que nuestro modelo tiene una sensibilidad relativamente baja, lo que significaría que no logra identificar correctamente la mayoría de los casos que son realmente happy, pero por otro lado la especificidad resulta alta, lo que nos indica que el modelo es efectivo para identificar los casos que son realmente no happy. 
+
+Esto nos indica que el modelo podría estar sesgado hacia los resultados no happy y podría dificultar su capacidad para capturar correctamente los casos happy.")
+```
+
+## Predicción
+
+> Identificad aquéllos países cuya probabilidad de estar entre los países más felices sea superior al 80%, según el modelo de predicciones contra el conjunto de prueba (testing), calculado anteriormente. Comparad este resultado con el ranking inicial de países más felices.
+
+Aquí tenemos que crear una nueva columna en nuestro `test_data`, que identifique los paises junto con sus probabilidades dado el modelo de regresión logística entrenado, la llamaremos **Predicted_prob**.
+
+```{r , message = FALSE, warning = FALSE, }
+# Calcular la sensibilidad y especificidad
+test_data$Predicted_prob <- predicted_probs
+```
+
+Acto seguido, deberíamos filtrar los países con probabilidades superiores al 80%: 
+```{r , message = FALSE, warning = FALSE, }
+# Calcular la sensibilidad y especificidad
+predicted_countries <- test_data[test_data$Predicted_prob >= 0.8, c("Country", "HS_re","Predicted_prob")]
+predicted_countries
+```
+
+En cuanto al ranking inicial de países más felices: 
+
+```{r , message = FALSE, warning = FALSE, }
+# Calcular la sensibilidad y especificidad
+happy_countries <- test_data[test_data$HS_re == 1, c("Country", "HS_re") ]
+happy_countries
+```
+Cuando comparamos ambas tablas, vemos como 5 de los valores aparecen (**Switzerland**, **Iceland**, **Sweden**, **Belgium**, **Luxembourg** y **United Arab Emirates**) mientras que los 3 últimos, el modelo los detecta como **unhappy** (**Thailand**, **Venezuela**, **Slovakia**)
+
+```{r tabla2.5,  message = FALSE, warning = FALSE, echo = FALSE}
+# Usamos lower.tail = FALSE para referirnos solo a los valores que tenga a su derecha.
+tabla2.5 <- c("2.5", "Identificad aquéllos países cuya probabilidad de estar entre los países más felices sea superior al 80%, según el modelo de predicciones contra el conjunto de prueba (testing), calculado anteriormente. Comparad este resultado con el ranking inicial de países más felices.", "Los paises que aparecen con una probabilidad del modelo de regresión logistica superior o igual a 0.8 son **Switzerland**, **Iceland**, **Sweden**, **Belgium**, **Luxembourg**,  **United Arab Emirates**, **Thailand**, **Venezuela**, **Slovakia**", "Cuando comparamos ambas tablas, vemos como 5 de los valores aparecen (**Switzerland**, **Iceland**, **Sweden**, **Belgium**, **Luxembourg** y **United Arab Emirates**) mientras que los 3 últimos, el modelo los detecta como **unhappy** (**Thailand**, **Venezuela**, **Slovakia**)")
+```
+
+
+## Bondad del ajuste
+
+> Evaluad la bondad del ajuste, mediante la devianza. Para que ModlgF sea bueno la devianza residual debe ser menor que la devianza nula. En ese caso el modelo predice la variable dependiente con mayor precisión.
+
+Para evaluar la bondad del ajuste de un modelo de regresión logística utilizando la devianza, se compara la devianza residual con la devianza nula. Si la devianza residual es menor que la devianza nula, indica que el modelo predice la variable dependiente con mayor precisión que un modelo nulo.
+
+Calculamos la devianza residual a partir de `ModlgF$deviance` y la devianza nula a partir de `ModlgF$null.deviance`:
+
+```{r , message = FALSE, warning = FALSE, }
+residual_deviance <- ModlgF$deviance
+residual_deviance
+null_deviance <- ModlgF$null.deviance
+null_deviance
+```
+Claramente, vemos que el valor de la devianza residual es menor que la devianza nula, esto significa que elmodelo tiene un mejor ajuste y predice la varible dependiente con mayor precisión. 
+
+```{r tabla2.6a,  message = FALSE, warning = FALSE, echo = FALSE}
+# Usamos lower.tail = FALSE para referirnos solo a los valores que tenga a su derecha.
+tabla2.6a <- c("2.6a", "Evaluad la bondad del ajuste, mediante la devianza. Para que ModlgF sea bueno la devianza residual debe ser menor que la devianza nula. En ese caso el modelo predice la variable dependiente con mayor precisión.", paste("Devianza residual = ", round(residual_deviance), ", 
+
+Devianza nula = ", round(null_deviance)), "Claramente, vemos que el valor de la devianza residual es menor que la devianza nula, esto significa que elmodelo tiene un mejor ajuste y predice la varible dependiente con mayor precisión. ")
+```
+
+
+> Evaluad la eficacia del modelo según el test Chi-cuadrado. En este caso el valor del estadístico Chicuadrado observado es igual a la diferencia de devianzas (nula-residual). Calculad la probabilidad asociada al estadístico del contraste utilizando la función pchisq.
+
+Primero vamos a tener que definir los grados de libertad de null y de modelo, para ello vamos a usar la siguiente función:
+```{r , message = FALSE, warning = FALSE, }
+df_null <- summary(log_model)$df.null
+df_model <- summary(log_model)$df.residual
+# una vez lo tenemos creado, definimos df_residual como la resta entre ambos:
+df_residual = df_null - df_model
+```
+
+Seguidamente definimos el estadístico chi-cuadrado de nuestro ejercicio bajo la definición del enunciado y las variables previas creadas:
+
+```{r , message = FALSE, warning = FALSE, }
+chi_cuadrado <- null_deviance - residual_deviance
+```
+
+Una vez obtenida la ecuación la aplicamos a la función `pchisq()`:
+
+```{r , message = FALSE, warning = FALSE, }
+p_value <- pchisq(chi_cuadrado, df = df_residual, lower.tail = FALSE)
+p_value
+```
+
+Como el valor de p es menor que un umbral de significancia previamente establecido (por ejemplo, p < 0.05), se puede concluir que el modelo es estadísticamente significativo y que hay evidencia de que el modelo se ajusta mejor que un modelo nulo.
+
+```{r tabla2.6b,  message = FALSE, warning = FALSE, echo = FALSE}
+# Usamos lower.tail = FALSE para referirnos solo a los valores que tenga a su derecha.
+tabla2.6b <- c("2.6b", "Evaluad la eficacia del modelo según el test Chi-cuadrado. En este caso el valor del estadístico Chicuadrado observado es igual a la diferencia de devianzas (nula-residual). Calculad la probabilidad asociada al estadístico del contraste utilizando la función pchisq.", paste("p_value =  ", round(p_value)) , " Como el valor de p es menor que un umbral de significancia previamente establecido (por ejemplo, p < 0.05), se puede concluir que el modelo es estadísticamente significativo y que hay evidencia de que el modelo se ajusta mejor que un modelo nulo.")
+```
+
+## Curva ROC
+
+> Dibujad la curva ROC y calcular el área debajo de la curva con ModlgF. Discutid el resultado.
+
+```{r , echo = FALSE, message = FALSE, warning = FALSE, comment = FALSE}
+if(!require(pROC)){
+    install.packages('pROC', repos='http://cran.us.r-project.org')
+    library(pROC)
+}
+```
+
+Las predicciones del modelo las tenemos bajo la variable previamente creada `predicted_probs` así que la usaremos de nuevo en este apartado:
+
+```{r , echo = FALSE, message = FALSE, warning = FALSE, comment = FALSE}
+# Crear el objeto ROC
+roc_obj <- roc(test_data$HS_re, predicted_probs)
+
+# Obtener las probabilidades predichas del modelo
+predicted_probs <- predict(ModlgF, newdata = test_data, type = "response")
+
+# Crear el objeto roc
+roc_obj <- roc(test_data$HS_re, predicted_probs)
+
+# Suavizar la curva ROC
+smoothed_roc <- smooth(roc_obj, method = "binormal")
+
+# Dibujar la curva ROC suavizada
+plot(smoothed_roc, main = "Curva ROC", xlab = "Tasa de Falsos Positivos", ylab = "Tasa de Verdaderos Positivos")
+
+# Calcular el area debajo de la curva
+auc <- auc(roc_obj)
+print(paste("Área bajo la curva (AUC):", auc))
+```
+
+
+En nuestro caso tenemos un área debajo de la curva (AUC) de 0.833, este resultado indica que el modelo tiene una buena capacidad para distinguir entre las clases positivas y negativas. El rango de AUC va de 0 a 1 y podemos definir que si la AUC esta entre 0.8 y 0.9, el modelo discrimina de forma excelente.
+
+```{r tabla2.7,  message = FALSE, warning = FALSE, echo = FALSE}
+# Usamos lower.tail = FALSE para referirnos solo a los valores que tenga a su derecha.
+tabla2.7 <- c("2.7", "Dibujad la curva ROC y calcular el área debajo de la curva con ModlgF. Discutid el resultado.", paste("AUC =  ", round(auc,3)) , " En nuestro caso tenemos un área debajo de la curva (AUC) de 0.833, este resultado indica que el modelo tiene una buena capacidad para distinguir entre las clases positivas y negativas. El rango de AUC va de 0 a 1 y podemos definir que si la AUC esta entre 0.8 y 0.9, el modelo discrimina de forma excelente.")
+```
+
+# Tabla resumen
+
+```{r libraries table, echo = FALSE, warning=FALSE, message=FALSE, comment = FALSE}
+if(!require(knitr)){
+    install.packages('knitr', repos='http://cran.us.r-project.org')
+    library(knitr)
+}
+if(!require(kableExtra)){
+    install.packages('kableExtra', repos='http://cran.us.r-project.org')
+    library(kableExtra)
+}
+```
+
+```{r resumen_preprocesamiento_df, echo=FALSE, warning = FALSE, comment=FALSE}
+# Creamos el dataframe a partir de todos los vectores de preprocesamiento que hemos ido creando a lo largo del rmd.
+matrix <- rbind(tabla0, tabla1.1.a, tabla1.1b, tabla1.2a, tabla1.2b, tabla1.3,tabla1.4, tabla2.0, tabla2.1, tabla2.2a, tabla2.2b, tabla2.2c.0, tabla2.2c.1, tabla2.2c.2, tabla2.3, tabla2.4, tabla2.5, tabla2.6a, tabla2.6b, tabla2.7)
+
+resumen_preprocesamiento <- as.data.frame(matrix, row.names=FALSE)
+```
+
+
+```{r resumen_preprocesamiento_tabla, echo=FALSE}
+
+tabla_resumen <- kable(resumen_preprocesamiento, caption ="Resumen del preprocesamiento",  col.names = c("Apartado", "Pregunta", "Resultado", "Conclusión")) %>%
+  column_spec(2:3, width = "22em") %>%
+  kable_styling(latex_options = c("HOLD_position"))
+
+tabla_resumen
+```
+
+# Resumen Ejecutivo
+
+Se ha empezado con el análisis de la regresión lineal múltiple en las variables Family, LE y Freedom. En este punto hemos identificado que estas 3 variables eran significativament explicativas del modelo. Despues hemos querido añadir GpC y Generosity, viendo que no valia la pena por el nivel de significación. A este modelo le hemos añadido una nueva varible cualitativa (Region), poniendo como referencia a la subcategoría Sub-Saharan Africa, nos hemos terminado quedando con este modelo ya que al aplicar este cambio hemos podido ver en más detalle la información referente a las variables explicativas. En particular hemos destacado que todos los valores en referencia a Sub-Saharan Africa son positivos lo que nos indica la percepción de felicidad es mayor para todas ellas. La única que es un poco más baja es la de Eastern Asia, aunque el p-value es muy alto y por lo tanto, no muy significativo.
+
+En el siguiente punto hemos identificado las puntuaciones medias de felicidad por region comparandolo así con los resultados obtenidos en nuestro modelo. Como punto a destacar podemos decir que nuestro modelo es bastante consistente en relación a este aspecto.
+
+Como último ejercicio de regresión lineal hemos utilizado nuestro modelo para predecir la variable dependiente HS si teniamos unos valores identificados para cada variable independiente, estas variables eran así 
+
+* País hipotético de la zona de Latin America and Caribbean, que hubiera obtenido las puntuaciones siguientes: Freedom= 0.5, Family = 1.2 y LE=0.90.
+
+El resultado de esta predicción ha sido un HS de 7.11557. 
+
+En cuanto a la regresión logística hemos iniciado creando una nueva variable relacionada con los valores de la variable HS, codificando de la siguiente forma: “unhappy or neutral”, con valores de HS de 0 a 6, y “happy” con valores de HS mayores de 6. Posteriormente se le dará el valor 0 a
+“unhappy” y el valor 1 a “happy”. Después hemos separado nuestro conjunto de datos en 2 particiones, una llamada train_data (Con el 80% de los registros) y la otra llamada test_data (Con el 20% de los registros).
+
+Una vez realizado esto hemos creado una nueva variable llamada Region_re construida a partir de la variable Region. Esta nueva variable nos ha aportado mejoras al modelo. Se observa una reducción de la desviación residual y del AIC, lo que indica un mejor ajuste del modelo de datos. Ademas algunas categorias de Region_re muestran una significancia estadística en su efecto sobre la variable dependiente. Aún así, cabe destacar que la categoría A_A_NZ tiene un valor extremadamente alto y un p-value no significativo, por lo que podría ser que esta categoría no esta aportando información útil al modelo. 
+
+En la matriz de confusión hemos definido que nuestro modelo obtenía una sensibilidad relativamente baja, lo que significaría que no logra identificar correctamente la mayoría de los casos que son realmente happy, pero por otro lado la especificidad resulta alta, lo que nos indica que el modelo es efectivo para identificar los casos que son realmente no happy. 
+
+Esto nos indica que el modelo podría estar sesgado hacia los resultados no happy y podría dificultar su capacidad para capturar correctamente los casos happy.
+
+En cuanto a la evaluación de la bondad del ajuste hemos identificado que el valor de la devianza residual es menor que la devianza nula, esto significa que el modelo tiene un mejor ajuste y predice la varible dependiente con mayor precisión.
+
+Y para terminar en cuanto a la curva ROC tenemos un área debajo de la curva (AUC) de 0.833, este resultado indica que el modelo tiene una buena capacidad para distinguir entre las clases positivas y negativas. El rango de AUC va de 0 a 1 y podemos definir que si la AUC esta entre 0.8 y 0.9, el modelo discrimina de forma excelente.
+
+
+# Bibliografía:
++ [Función lm()]( https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/lm)
++ [Función anova()](https://www.scribbr.com/statistics/anova-in-r/)
++ [Función Aggregate()](https://r-coder.com/aggregate-en-r/)
++ [Relación entre variables](https://www.studocu.com/es/document/uned/fundamentos-de-analisis-de-datos/tema-5-analisis-de-datos/10223373)
++ [Interpretación Gráfico de valores ajustados frente a residuos](https://support.minitab.com/es-mx/minitab/21/help-and-how-to/statistical-modeling/regression/how-to/fit-regression-model/interpret-the-results/all-statistics-and-graphs/residual-plots/)
++ [Gráficos qqplot()](https://www.dm.uba.ar/materias/analisis_de_datos/2008/1/teoricas/Teor5.pdf)
++ [Función predict()](https://www.digitalocean.com/community/tutorials/predict-function-in-r)
++ [Función createDataPartition()](https://www.rdocumentation.org/packages/caret/versions/6.0-94/topics/createDataPartition)
++ [Función set.seed()](https://www.edureka.co/community/51489/what-is-set-seed-in-r)
++ [Función glm](https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/glm)
++ [Collinearity](https://book.stat420.org/collinearity.html)
++ [Función grepl](https://statisticsglobe.com/grep-grepl-r-function-example)
++ [Interpretación Residual Evidence](https://stats.stackexchange.com/questions/108995/interpreting-residual-and-null-deviance-in-glm-r)
++ [Interpretación de AIC](https://www.r-bloggers.com/2018/04/how-do-i-interpret-the-aic/)
++ [Función predict en Regresión logística](http://www.science.smith.edu/~jcrouser/SDS293/labs/lab4-r.html)
++ [Especificidad y sensibilidad](https://es.wikipedia.org/wiki/Sensibilidad_y_especificidad)
++ [Null Deviance & Residual Deviance](https://stats.stackexchange.com/questions/108995/interpreting-residual-and-null-deviance-in-glm-r)
++ [Función pROC()](https://www.rdocumentation.org/packages/pROC/versions/1.18.2)
++ [Función smooth() de pROC](https://search.r-project.org/CRAN/refmans/pROC/html/smooth.html)
